@@ -51,3 +51,28 @@ Instead of forcing a top-down design, I am pivoting to a **bottom-up approach**.
 
 ### Next Steps:
 Now that the battery is solid, fully specified, and safely protected against numerical drift, I am ready to design the next critical component of the Power System: the **Solar Panels (`ISolarPanel`)**, incorporating their deployment mechanics and energy production logic.
+
+
+---
+
+## 📝 Entry 3: Solar Array Design & Functional Domain Modeling
+**Date:** 18 July 2026
+
+### What I Did:
+1. Designed and implemented the `ISolarPanel` interface along with its concrete `SolarPanel` class.
+2. Formulated strict JML behavioral contracts to mirror the physical mechanics of stowed versus deployed states.
+3. Decoupled the solar panel component from any heavy external environmental dependencies (`Environment` or `Sun` classes) by using a push-based data approach (`double sunEnergy`).
+
+### Challenges & Insights (What I Realized):
+
+* **The Launch Lifecycle Constraints:**
+  Satellites are packed tightly into rocket fairings, meaning solar arrays must start the simulation completely stowed (`deployed = false`). The constructor explicitly enforces this launch state, ensuring that the initial energy production rate is strictly locked at `MIN_ENERGY`.
+
+* **Defining "Functional" Operations:**
+  I initially wrestled with what it truly means for a subsystem to be "functional." While one might think it means "not broken," in space operations, a component is only functional if it is actively delivering utility. I refined the `isFunctional()` query to evaluate an operational status: the panel is functional if and only if it is fully deployed **AND** actively receiving solar energy. If the satellite enters an eclipse (Earth's shadow, where `sunEnergy == 0.0`), the panel instantly flags itself as non-functional.
+
+* **Decoupling vs. Dependency (The Control Flow):**
+  I realized a vital architectural pattern: the solar panel shouldn't "know" or poll the environment for sun status. By designing `updateProduction(double sunEnergy)` to accept a primitive value instead of an `Environment` object reference, the class remains entirely modular, loosely coupled, and simple to unit-test in isolation. The master simulator loop will handle the physics calculations and pass the resulting power value down.
+
+### Next Steps:
+With the individual power generation (`SolarPanel`) and power storage (`Battery`) building blocks now completely specified and implemented, the next objective is to construct the central supervisor: the **Power Management System (PMS)**, which will coordinate distribution between these components.
