@@ -76,3 +76,29 @@ Now that the battery is solid, fully specified, and safely protected against num
 
 ### Next Steps:
 With the individual power generation (`SolarPanel`) and power storage (`Battery`) building blocks now completely specified and implemented, the next objective is to construct the central supervisor: the **Power Management System (PMS)**, which will coordinate distribution between these components.
+
+
+---
+
+## 📝 Entry 4: Power System Controller & Architectural Refinements
+**Date:** 19 July 2026
+
+### What I Did:
+1. Designed and implemented the `IPowerSystemController` interface and its concrete `PowerSystemController` class to bridge solar production and battery storage.
+2. Strictly applied the **Command-Query Separation (CQS)** principle by keeping the state-updating method (`processEnergyBalance`) as a `void` command and exposing its results via a dedicated pure query (`getGrantedEnergy()`).
+3. Resolved a critical units mismatch and boundary condition (*edge case*) regarding battery overcharging.
+
+### Challenges & Insights (What I Realized):
+
+* **The Command-Query Separation (CQS) Imperative:**
+  Initially, I considered having the energy balance method return the allocated wattage directly. However, I realized this violated CQS by combining a state mutation with a query. By splitting this into a `void processEnergyBalance(double)` command and a `double getGrantedEnergy()` query, the code remains clean, modular, and fully compliant with strict JML analytical tools.
+
+* **The Overcharge Defensiveness (Clamping):**
+  A critical logical flaw was discovered: if the solar surplus exceeded the remaining physical space in the battery, a naive charge call would violate the battery's strict JML preconditions and crash the simulation. I introduced a clamping mechanism using `Math.min(surplus, emptySpace)` to gracefully dissipate excess power once the battery hits maximum capacity.
+
+* **Dimensional Analysis & Dimensional Alignment:**
+  I noticed a conceptual mismatch between the battery state (originally thought of as a percentage from 0 to 100) and the solar/system flow (expressed in Watts). To maintain physical and mathematical integrity without adding verbose conversion layers, I established a project-wide convention: **all energy metrics are unified under Watts (W)**. The battery's `MAX_CHARGE_LEVEL` of 100 represents 100 Watts, which naturally maps to a 100% full state.
+
+### Next Steps:
+With the entire energy subsystem specified, implemented, and mathematically secured, the power framework is complete. The next phase will involve developing **the Orbit and Attitude System **.
+
