@@ -5,7 +5,6 @@ This file tracks my progress, design decisions, technical challenges, and key le
 ---
 
 ## 📝 Entry 1: Architecture & The Dependency Challenge
-**Date:** 10 July 2026
 
 ### What I Did:
 1. Sketched the global system architecture on paper, identifying the 4 major pillars: Satellite, Environment, Mission Operations Center (MOC), and the Communication Link.
@@ -23,7 +22,7 @@ Instead of forcing a top-down design, I am pivoting to a **bottom-up approach**.
 ---
 
 ## 📝 Entry 2: Designing the Battery Subsystem & Overcoming Numerical Drift
-**Date:** 14 July 2026
+
 
 ### What I Did:
 1. Initiated the bottom-up approach by designing the `IBattery` interface and its concrete implementation `Battery`.
@@ -56,7 +55,7 @@ Now that the battery is solid, fully specified, and safely protected against num
 ---
 
 ## 📝 Entry 3: Solar Array Design & Functional Domain Modeling
-**Date:** 18 July 2026
+
 
 ### What I Did:
 1. Designed and implemented the `ISolarPanel` interface along with its concrete `SolarPanel` class.
@@ -81,7 +80,7 @@ With the individual power generation (`SolarPanel`) and power storage (`Battery`
 ---
 
 ## 📝 Entry 4: Power System Controller & Architectural Refinements
-**Date:** 19 July 2026
+
 
 ### What I Did:
 1. Designed and implemented the `IPowerSystemController` interface and its concrete `PowerSystemController` class to bridge solar production and battery storage.
@@ -102,3 +101,34 @@ With the individual power generation (`SolarPanel`) and power storage (`Battery`
 ### Next Steps:
 With the entire energy subsystem specified, implemented, and mathematically secured, the power framework is complete. The next phase will involve developing **the Orbit and Attitude System **.
 
+
+## 📝 Entry 5: AOCS (Attitude and Orbit Control System) Architecture, Environment Coupling & Sensor Abstraction
+
+
+### What I Did:
+- Conducted deep-dive domain research into Attitude and Orbit Control Systems (AOCS), identifying its 4 main pillars: Attitude Control (brain), Sensors (eyes), Orbit Control (trajectory), and Actuators/Propulsion (muscle).
+- Abstracted physical space dynamics away from complex 3D Newtonian matrices toward an **information-centric domain model**.
+- Designed and implemented the `IEnvironment` interface to supply contextual space state variables (Sun/Earth visibility, natural drift, tick updates).
+- Built an * **OOP sensor hierarchy** using an `ISensor` base interface along with specialized `ISunSensor` and `IEarthSensor` interfaces.
+- Implemented the `IAttitudeControl` decision-making unit to process sensor input, evaluate alignment drift against tolerances, and dynamically adjust system power consumption based on active correction state.
+
+- * **Domain Research & Conceptual Mapping:** Conducted in-depth research into satellite orientation and trajectory management. Identified the 4 core pillars of an AOCS: Attitude Control System (software brain), Sensors (eyes), Orbit Control System (trajectory management), and Actuators/Propulsion (thrusters and reaction wheels).
+
+- * **Designed the Environment Context (IEnvironment):** Created the environment contract to represent space conditions relative to the satellite’s viewpoint. Implemented key state queries including isInSunlight(), isEarthInSight(), ideal alignment values (getSunAlignment(), getEarthAlignment()), environmental disturbances (getNaturalDrift()), and a simulation cycle step (updateState()).
+
+- * **Architected the Sensor Subsystem Hierarchy:** Applied **OOP inheritance and polymorphism** by defining a base ISensor interface (handling activation states and returning a SensorType enum) alongside specialized child interfaces (ISunSensor, IEarthSensor) with domain-specific measurement contracts.
+
+- * **Implemented the Decision-Making Controller (IAttitudeControl):** Built the core attitude control unit (AttitudeControl) that executes at every simulation tick (processAttitude). It reads sensor data, compares it against desired alignment values (DESIRED_SUN_ALIGNMENT, DESIRED_EARTH_ALIGNMENT), and dynamically adjusts power consumption (drawing CORRECTION_POWER = 15.0W during active adjustments vs. MAINTENANCE_POWER = 2.0W during passive state).
+
+ ### Challenges & Insights (What I Realized):
+
+ - * **Architectural Pivot — Information over Physics Objects:** I initially got stuck trying to model full 3D physical reality (vectors, rotation matrices, Euler angles). I realized a key software engineering principle: in simulation, software components care about the information provided, not the full physical object. Abstracting away heavy Newtonian mechanics in favor of clean data models avoided an unnecessary technical bottleneck.
+ 
+- * **The Necessity of Autonomous Attitude Control:** Space environment disturbances (solar radiation pressure, gravitational gradients from Earth and Moon, magnetic forces) cause continuous passive tumbling. Unlike heavy planned orbital maneuvers, attitude control must run continuously and autonomously on every tick to maintain operational target alignment.
+
+- * **Environment Dependency Coupling:** Sensors cannot function in isolation; they are intrinsically coupled to space conditions. Designing IEnvironment provided the necessary context for sensors without violating component boundaries.
+
+- * **Simulating Noisy Data via Sensor Polymorphism:** Real-world sensors rarely return flawless values. Specialized implementations like SunSensor read ideal environmental values and subtract getNaturalDrift(), providing realistic degraded measurements for the onboard software to process.
+
+### Next Steps:
+Through this abstraction, I attempted to simulate the core logic of an attitude control system. There are likely edge cases or gaps in this simplified model, and I know it is far from perfect. However, it provides a solid foundation for now. I will move forward to develop the next satellite subsystems, and I will revisit and refine this module later if issues arise during integration.
