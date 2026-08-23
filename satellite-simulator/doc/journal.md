@@ -106,11 +106,6 @@ With the entire energy subsystem specified, implemented, and mathematically secu
 
 
 ### What I Did:
-- Conducted deep-dive domain research into Attitude and Orbit Control Systems (AOCS), identifying its 4 main pillars: Attitude Control (brain), Sensors (eyes), Orbit Control (trajectory), and Actuators/Propulsion (muscle).
-- Abstracted physical space dynamics away from complex 3D Newtonian matrices toward an **information-centric domain model**.
-- Designed and implemented the `IEnvironment` interface to supply contextual space state variables (Sun/Earth visibility, natural drift, tick updates).
-- Built an * **OOP sensor hierarchy** using an `ISensor` base interface along with specialized `ISunSensor` and `IEarthSensor` interfaces.
-- Implemented the `IAttitudeControl` decision-making unit to process sensor input, evaluate alignment drift against tolerances, and dynamically adjust system power consumption based on active correction state.
 
 - * **Domain Research & Conceptual Mapping:** Conducted in-depth research into satellite orientation and trajectory management. Identified the 4 core pillars of an AOCS: Attitude Control System (software brain), Sensors (eyes), Orbit Control System (trajectory management), and Actuators/Propulsion (thrusters and reaction wheels).
 
