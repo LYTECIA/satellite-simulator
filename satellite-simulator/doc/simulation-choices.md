@@ -93,3 +93,115 @@ It is not converted into heat and does not interact with the Thermal System.
 ## Future Decisions
 
 Additional implementation choices will be documented here as new subsystems are developed.
+
+
+# 3. Attitude and Orbit Control System (AOCS)
+
+## 3.1 Information-Based Abstraction Over 3D Physics
+
+### Choice
+
+The AOCS is modeled around discrete scalar alignment indicators (range $[0.0, 1.0]$) rather than explicit 3D physical dynamics (vector forces, rotation matrices, quaternions, or Euler angles).
+
+### Motivation
+
+In full-scale satellite engineering, attitude dynamics involve complex 3D mechanics and continuous perturbation models. Implementing these mathematical models would introduce heavy mathematical overhead without yielding extra architectural value for a software simulation. 
+
+Following core software engineering principles, the simulator focuses on the **information content** rather than the physical object: the software controller needs to know *if* and *by how much* the satellite has drifted, not compute complex vector mechanics.
+
+### Consequences
+
+* **Sun Alignment** (`[0.0, 1.0]`): Represents how well the solar panels are facing the Sun ($1.0$ = optimal alignment, $0.0$ = total misalignment or eclipsed).
+* **Earth Alignment** (`[0.0, 1.0]`): Represents how accurately payload sensors and communication antennas point toward Earth.
+* Attitude drift and correction are represented as simple scalar deviations updated per simulation tick.
+
+---
+
+## 3.2 Simplified Environmental Relative Viewpoint
+
+### Choice
+
+The environment (`IEnvironment`) represents the space conditions exclusively **relative to the satellite’s perspective**, rather than simulating global orbital mechanics.
+
+### Motivation
+
+Simulating absolute celestial mechanics (Earth/Sun ephemerides, orbital planes) would couple the environment heavily with orbital physics engines. Modeling boolean visibility states and alignment coefficients from the satellite's viewpoint satisfies all functional dependencies of the AOCS, Power, and Payload subsystems.
+
+### Behaviour
+
+* `isInSunlight()`: Directly indicates whether the satellite is in direct sunlight or in Earth's shadow (eclipse).
+* `isEarthInSight()`: Directly indicates whether the Earth is visible for communication/payload operations.
+* Orbital perturbations are aggregated into a single scalar value returned by `getNaturalDrift()`.
+
+---
+
+## 3.3 Eclipse Mode Behaviour
+
+### Choice
+
+When the satellite enters an eclipse (`isInSunlight() == false`), the Sun alignment error is artificially evaluated to `0.0` by the attitude controller.
+
+### Motivation
+
+When the Sun is occulted by the Earth, a physical Sun sensor reads `0.0`. If compared directly to the desired alignment target ($1.0$), the controller would falsely identify a maximum misalignment error ($1.0$) and continuously fire reaction wheels/thrusters in the dark. 
+
+Forcing the Sun error to `0.0` during eclipses prevents unrealistic, continuous energy drain during orbital nights.
+
+### Consequences
+
+* No attitude corrections are executed for the Sun axis during eclipses.
+* The AOCS enters low-power maintenance mode unless Earth-pointing alignment requires correction.
+
+---
+
+## 3.4 Discrete Two-State Power Consumption
+
+### Choice
+
+The AOCS subsystem operates under a simplified two-tier power consumption model:
+* **Maintenance Power:** $2.0\text{ W}$ (passive monitoring / idle state).
+* **Correction Power:** $15.0\text{ W}$ (active reaction wheel / actuator correction).
+
+### Motivation
+
+Real reaction wheels and control moment gyroscopes vary their power consumption continuously based on angular momentum, motor torque, and wheel speed profiles. Representing power as a binary step function based on error thresholds (`TOLERANCE = 0.05`) simplifies power calculations while accurately capturing active vs. idle power demands on the EPS.
+
+---
+
+## 3.5 Ground-Commanded Orbit Control Model
+
+### Choice
+
+Unlike Attitude Control (which operates autonomously every tick), Orbit Control maneuvers are modeled as **ground-commanded operations** triggered exclusively via telecommands (`requestGroundManeuver()`).
+
+### Motivation
+
+In real satellite missions, orbital drift occurs over extended periods (days or weeks). Orbital correction maneuvers (*station-keeping*) consume critical propellant reserves and alter the trajectory significantly. Consequently, orbit maneuvers are not performed in an autonomous closed-loop by the satellite; they are calculated by ground stations and dispatched via telecommands to be executed by the On-Board Computer (OBC).
+
+### Consequences
+
+* `OrbitControl` tracks orbital drift continuously using a scalar value (`getOrbitalDrift()`).
+* Orbital drift increases dynamically at each simulation tick based on environmental perturbations (`env.getNaturalDrift() * DRIFT_FACTOR`).
+* No automatic propulsion firing occurs unless an explicit ground command is received.
+* Executing a maneuver resets `orbitalDrift` back to `0.0` and consumes the ground command flag.
+
+---
+
+## 3.6 Simplified Propulsion & Fuel Management Model
+
+### Choice
+
+The propulsion system (`IPropulsionSystem`) uses a simplified mass-based fuel model and discrete power states rather than modeling fluid dynamics, chamber pressure, or specific impulse ($I_{sp}$).
+
+### Motivation
+
+Simulating chemical propellant thermodynamics, valve pressures, and thrust vectors would add heavy physical complexity without altering the architectural interactions between the AOCS, the Power system, and the On-Board Computer.
+
+### Consequences
+
+* **Propellant Tracking:** Fuel is represented as a simple scalar mass in kilograms ($kg$), decremented by a fixed cost (`MANEUVER_FUEL_COST = 0.5 kg`) per firing pulse.
+* **Fuel Guarding:** Thruster activation is conditional on fuel availability (`fuelLevel >= fuelAmount`). If fuel is exhausted, the thrusters fail to fire cleanly without throwing runtime exceptions.
+* **Two-Tier Propulsion Power:**
+  * **Standby Power:** $5.0\text{ W}$ (active tank and valve heaters).
+  * **Firing Power:** $40.0\text{ W}$ (active thruster pulse and magnetic valves).
+* **Inactive State:** When turned OFF (`setActive(false)`), power consumption drops strictly to $0.0\text{ W}$.
