@@ -127,3 +127,31 @@ With the entire energy subsystem specified, implemented, and mathematically secu
 
 ### Next Steps:
 Through this abstraction, I attempted to simulate the core logic of an attitude control system. There are likely edge cases or gaps in this simplified model, and I know it is far from perfect. However, it provides a solid foundation for now. I will move forward to develop the next satellite subsystems, and I will revisit and refine this module later if issues arise during integration.
+
+
+## 📝 Entry 6: AOCS Orbit & Propulsion Subsystems, Ground-Commanded Control & Package Restructuring
+
+
+
+### What I Did:
+
+ - * ** Separation of Concerns (Controller vs. Actuator):** Decoupled orbital management into two distinct hardware and software roles following the Single Responsibility Principle: IPropulsionSystem / PropulsionSystem (the physical actuator handling fuel reserves in kg, thruster firing states isFiring, and power consumption levels) and IOrbitControl / OrbitControl (the software controller evaluating orbital drift and commanding maneuvers).
+
+ - * **Implemented Ground-Commanded Orbital Control:** Designed the processOrbit method to follow an external command loop. Rather than firing thrusters autonomously, it executes maneuvers only upon receiving ground telemetry orders via requestGroundManeuver(), resetting orbitalDrift to 0.0 and clearing the command flag upon completion.
+
+  - * **Dynamic Environment Coupling:** Integrated processOrbit with the dynamic environment context (env.getNaturalDrift()). Applied a scaling coefficient (DRIFT_FACTOR = 0.02) to convert environmental perturbations (solar radiation pressure, atmospheric drag) into smooth, realistic incremental orbital drift per tick without blowing up the simulation scales.
+
+  - * **Functional Package Restructuring:** Organized the project workspace into dedicated functional sub-packages (satellite.model.aocs, satellite.model.aocs.sensors, satellite.model.environment, and satellite.model.power). Configured explicit public visibility scopes and import declarations to enable clean inter-package communication.
+      
+
+### Challenges & Insights (What I Realized):
+
+  - * **Autonomous vs. Ground-Commanded Operational Trade-off:** Unlike Attitude Control—which requires continuous autonomous stabilization on every cycle—Orbital Control consumes finite physical propellant (kg) and significantly alters the spacecraft's long-term trajectory. Modeling station-keeping as a ground-commanded operational flow mirrors real-world space operations where heavy maneuvers are pre-calculated at the Mission Operations Center (MOC).
+
+ - * **Dynamic Load Modeling in Actuators:** Real thruster systems require active thermal management. Modeling IPropulsionSystem with two distinct electrical states—a baseline 5.0 W idle power for propellant line heaters versus a 40.0 W surge during active thruster firing—ensures accurate dynamic load profiles on the Power Management System.
+
+  - * **Modular Codebase Maintenance via Packages:** As the simulator grew, keeping all source files in a flat directory caused unnecessary namespace clutter. Grouping classes into specialized functional packages keeps the architecture clean, maintainable, and aligned with enterprise Java standards.
+   
+### Next Steps:
+
+ With the Power and full AOCS (Attitude, Orbit, Sensors, Propulsion) frameworks specified and modularized, proceed to designing the Thermal Subsystems.
