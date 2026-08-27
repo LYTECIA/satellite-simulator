@@ -28,7 +28,7 @@ The satellite is split into two distinct layers: **The Flight Software (OBC)** w
     *   *Components:* Instrument (e.g., Camera/Sensor), Data Storage (Mass Memory).
 *   **The Thermal System:** Regulates the satellite's internal temperature against space extremes.
     *   *Components:* Temperature Sensors, Heaters.
-*   **The Attitude & Orbit Control System (ADCS):** Manages the satellite's orientation and path.
+*   **The Attitude & Orbit Control System (AOCS):** Manages the satellite's orientation and path.
     *   *Components:* Attitude/Sun Sensors, Actuators (Reaction Wheels/Thrusters).
 *   **The Communication System:** Handles physical radio broadcast and reception.
     *   *Components:* Transceiver, Antennas.

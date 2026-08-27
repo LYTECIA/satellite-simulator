@@ -22,7 +22,10 @@ Instead of forcing a top-down design, I am pivoting to a **bottom-up approach**.
 ---
 
 ## 📝 Entry 2: Designing the Battery Subsystem & Overcoming Numerical Drift
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 
 ### What I Did:
 1. Initiated the bottom-up approach by designing the `IBattery` interface and its concrete implementation `Battery`.
@@ -55,7 +58,10 @@ Now that the battery is solid, fully specified, and safely protected against num
 ---
 
 ## 📝 Entry 3: Solar Array Design & Functional Domain Modeling
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 
 ### What I Did:
 1. Designed and implemented the `ISolarPanel` interface along with its concrete `SolarPanel` class.
@@ -80,7 +86,10 @@ With the individual power generation (`SolarPanel`) and power storage (`Battery`
 ---
 
 ## 📝 Entry 4: Power System Controller & Architectural Refinements
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 
 ### What I Did:
 1. Designed and implemented the `IPowerSystemController` interface and its concrete `PowerSystemController` class to bridge solar production and battery storage.

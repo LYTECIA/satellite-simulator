@@ -1,4 +1,4 @@
-package satellite.model;
+package satellite.model.power;
 
 /**
  * Interface representing the satellite's battery subsystem.

@@ -1,4 +1,4 @@
-package satellite.model;
+package satellite.model.power;
 
 /**
  * Interface representing the central Power System Controller.

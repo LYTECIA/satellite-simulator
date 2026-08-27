@@ -1,4 +1,4 @@
-package satellite.model;
+package satellite.model.power;
 
 /**
  * Concrete implementation of the satellite's solar panel subsystem.
