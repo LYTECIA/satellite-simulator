@@ -1,8 +1,8 @@
 package satellite.model.aocs;
 
-import satellite.model.IEnvironment;
 import satellite.model.aocs.sensors.IEarthSensor;
 import satellite.model.aocs.sensors.ISunSensor;
+import satellite.model.environment.IEnvironment;
 
 public class AttitudeControl implements IAttitudeControl {
 

@@ -1,4 +1,4 @@
-package satellite.model;
+package satellite.model.environment;
 
 public interface IEnvironment {
 

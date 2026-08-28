@@ -1,6 +1,6 @@
 package satellite.model.aocs.sensors;
 
-import satellite.model.IEnvironment;
+import satellite.model.environment.IEnvironment;
 
 public interface ISunSensor extends ISensor {
 

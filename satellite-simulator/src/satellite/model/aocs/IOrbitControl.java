@@ -1,6 +1,6 @@
 package satellite.model.aocs;
 
-import satellite.model.IEnvironment;
+import satellite.model.environment.IEnvironment;
 
 public interface IOrbitControl {
 
