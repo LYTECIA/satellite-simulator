@@ -205,3 +205,59 @@ Simulating chemical propellant thermodynamics, valve pressures, and thrust vecto
   * **Standby Power:** $5.0\text{ W}$ (active tank and valve heaters).
   * **Firing Power:** $40.0\text{ W}$ (active thruster pulse and magnetic valves).
 * **Inactive State:** When turned OFF (`setActive(false)`), power consumption drops strictly to $0.0\text{ W}$.
+
+
+---
+
+# 4. Thermal Control System (TCS)
+
+## 4.1 Environmental & Operational Heat Balance Abstraction
+
+### Choice
+
+Thermal dynamics are modeled using discrete scalar temperature variations ($\text{°C/tick}$) driven by sunlight exposure and active heating, rather than solving continuous thermodynamic heat transfer differential equations.
+
+### Motivation
+
+Full-scale spacecraft thermal engineering requires complex finite-element thermal analysis (FEA), modeling conduction, radiative heat exchange ($Q = \epsilon \sigma A T^4$), and view factors. Implementing continuous thermal partial differential equations would introduce significant computational overhead without adding software architecture value.
+
+A scalar heat model satisfies all functional requirements: evaluating environmental impact (heating in sunlight vs. cooling in shadow) and determining when power-consuming heaters must be triggered.
+
+### Consequences
+
+* **Sunlight Heating:** Increases internal temperature by $+0.8\text{ °C}$ per simulation tick when exposed to the Sun (`env.isInSunlight() == true`).
+* **Shadow Cooling:** Decreases internal temperature by $-1.0\text{ °C}$ per tick during eclipses (`env.isInSunlight() == false`).
+* **Configurable Initial State:** The constructor accepts an explicit initial temperature to test both nominal startup conditions and cold-start emergency scenarios.
+
+---
+
+## 4.2 Hysteresis Threshold Control Loop
+
+### Choice
+
+Active thermal regulation operates using a two-threshold hysteresis control loop (`MIN_SAFE_TEMP = 5.0 °C` and `TARGET_TEMP = 20.0 °C`) instead of proportional-integral-derivative (PID) analog control.
+
+### Motivation
+
+In physical systems, simple single-threshold triggers cause rapid, high-frequency ON/OFF switching (*chatter*) when operating near boundary values. Using an hysteresis band prevents relay chatter, prolongs component lifetime, and provides clean state transitions for discrete software simulation.
+
+### Consequences
+
+* Heaters switch ON automatically when internal temperature drops strictly below $5.0\text{ °C}$.
+* Heaters remain active until internal temperature reaches or exceeds the target of $20.0\text{ °C}$.
+* Between $5.0\text{ °C}$ and $20.0\text{ °C}$, the system retains its previous heater state.
+
+---
+
+## 4.3 Discrete Thermal Power Tiers
+
+### Choice
+
+The Thermal Control System operates across three discrete power consumption levels:
+* **Inactive State (`setActive(false)`):** $0.0\text{ W}$ (system completely powered off).
+* **Standby Mode:** $1.0\text{ W}$ (idle monitoring, temperature sensors active).
+* **Heater Active Mode:** $25.0\text{ W}$ (active heating elements consuming electrical power from EPS).
+
+### Motivation
+
+Electric resistance heaters consume significant power when energized. Modeling power as discrete states allows the simulation to accurately reflect energy draw on the battery (`IBattery`) through the central `PowerSystemController` during orbital night operations.

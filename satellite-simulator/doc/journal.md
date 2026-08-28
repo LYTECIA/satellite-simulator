@@ -164,3 +164,30 @@ Through this abstraction, I attempted to simulate the core logic of an attitude 
 ### Next Steps:
 
  With the Power and full AOCS (Attitude, Orbit, Sensors, Propulsion) frameworks specified and modularized, proceed to designing the Thermal Subsystems.
+ 
+ 
+ 
+## 📝 Entry 7: Thermal Control Subsystem Implementation & Hysteresis Regulation
+
+
+### What I Did:
+
+* **Designed the Thermal Control Module (`IThermalControl`):** Created the thermal management subsystem interface and concrete implementation in a dedicated `satellite.model.thermal` package to safeguard hardware integrity against extreme space thermal environments.
+
+* **Implemented Passive Thermal Exchange Dynamics:** Modeled natural environmental thermal transfers based on orbital illumination—simulating direct solar heating ($+0.8^\circ\text{C}/\text{tick}$) when exposed to sunlight and passive radiative cooling ($-1.0^\circ\text{C}/\text{tick}$) when shadowed in eclipse.
+
+* **Built a Hysteresis Loop Thermostat:** Implemented active heating logic with hysteresis bounds to prevent rapid state oscillation (chattering). Electric heaters engage automatically when temperature drops below `MIN_SAFE_TEMP = 5.0°C` and stay latched active until restoring the core to `TARGET_TEMP = 20.0°C`.
+
+* **Dynamic Load & Initial Condition Flexibilities:** Configured dual-state power consumption (a baseline $1.0\text{ W}$ standby load for continuous sensor monitoring vs. a $25.0\text{ W}$ surge during active resistance heating) and exposed constructor parameters for flexible starting temperatures to test both nominal operations and cold-start recovery scenarios.
+
+### Challenges & Insights (What I Realized):
+
+* **Preventing Thermostatic Chattering via Hysteresis:** A naive single-threshold thermostat (e.g., toggling heater on below 20.0°C and off above 20.0°C) would cause rapid, unphysical switching every single tick, straining system state logic and generating noisy power draws. Introducing a distinct trigger bound (`MIN_SAFE_TEMP = 5.0°C`) and target restoration bound (`TARGET_TEMP = 20.0°C`) stabilizes the control loop.
+
+* **Asymmetric Thermal Radiative Balance:** In orbit, heat dissipation into the cosmic void during eclipse occurs faster than passive solar radiation absorption. Reflecting this asymmetry ($+0.8^\circ\text{C}$ heating vs. $-1.0^\circ\text{C}$ cooling) correctly forces the satellite to rely on active battery-powered heating during long eclipse passes.
+
+* **Tight Inter-Subsystem Energy Dependencies:** Thermal control represents one of the largest passive energy drains during eclipse phases. Integrating its dynamic $25.0\text{ W}$ heater load highlights the interdependence between the Thermal subsystem, `IEnvironment` eclipse flags, and the `Battery` storage ceiling.
+
+### Next Steps:
+
+* Proceed with designing the **Communication Link ** .
