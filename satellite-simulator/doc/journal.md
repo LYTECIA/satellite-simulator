@@ -191,3 +191,29 @@ Through this abstraction, I attempted to simulate the core logic of an attitude 
 ### Next Steps:
 
 * Proceed with designing the **Communication Link ** .
+
+
+## 📝 Entry 8: Telemetry, Tracking & Command (TT&C) Communication Subsystem
+
+
+### What I Did:
+
+* **Designed the TT&C Subsystem Architecture:** Created the dedicated `satellite.model.communication` package alongside the `ICommunicationSystem` interface and `CommunicationSystem` implementation to manage ground-to-space uplink (command reception) and space-to-ground downlink (telemetry transmission).
+
+* **Implemented Ground Command Buffering:** Built `receiveCommand()` and `getLastReceivedCommand()` to register, store, and expose incoming ground control instructions as String payloads.
+
+* **Environment-Gated Communication Channel:** Integrated dynamic line-of-sight checks within `processCommunication(IEnvironment env)` using `env.isGroundStationInSight()`. Data transmission and uplink reception are automatically blocked whenever orbital geometry cuts ground visibility.
+
+* **Dynamic RF Power Consumption Profile:** Modeled a three-tiered power consumption scheme tied to component status—$0.0\text{ W}$ when powered off (`active == false`), a baseline $1.0\text{ W}$ standby load to continuously listen for uplink orders, and a $20.0\text{ W}$ RF power amplifier draw during active telemetry transmission (`sendData()`).
+
+### Challenges & Insights (What I Realized):
+
+* **Visibility-Constrained Communication Windows:** In Low Earth Orbit (LEO), ground station passes are brief and intermittent. Tying telemetry operations directly to `env.isGroundStationInSight()` ensures the satellite software cannot unrealistically dump data or receive ground commands into deep space voids.
+
+* **Transient State Lifecycle per Tick:** Radio transmission is an instantaneous dynamic event per simulation cycle. Auto-resetting the `transmitting` flag to `false` at the start of each tick ensures the $20.0\text{ W}$ RF amplifier surge is billed only during cycles where `sendData()` is explicitly executed.
+
+* **Command Buffer Management:** Decoupling uplink command reception from execution via a string-based buffer allows the communication module to act as a pure receiver, leaving command decoding and routing to the upper-level satellite brain (`OBC`).
+
+Next Steps:
+
+* Develop the final physical equipment module: **The Payload Subsystem** 
