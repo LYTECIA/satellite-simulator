@@ -4,6 +4,7 @@ public class Environment implements IEnvironment {
 
     private boolean inSunlight;
     private boolean earthInSight;
+    private boolean groundStationInSight;
 
     /*
      * Simplified current alignment values.
@@ -23,12 +24,14 @@ public class Environment implements IEnvironment {
     public Environment(
             boolean inSunlight,
             boolean earthInSight,
+            boolean groundStationInSight,
             double sunAlignment,
             double earthAlignment,
             double naturalDrift) {
 
         this.inSunlight = inSunlight;
         this.earthInSight = earthInSight;
+        this.groundStationInSight = groundStationInSight;
         this.sunAlignment = sunAlignment;
         this.earthAlignment = earthAlignment;
         this.naturalDrift = naturalDrift;
@@ -44,6 +47,11 @@ public class Environment implements IEnvironment {
     @Override
     public boolean isEarthInSight() {
         return this.earthInSight;
+    }
+    
+    @Override
+    public boolean isGroundStationInSight() {
+        return groundStationInSight;
     }
 
 

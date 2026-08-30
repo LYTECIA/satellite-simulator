@@ -13,6 +13,12 @@ public interface IEnvironment {
      */
     /*@ pure @*/
     boolean isEarthInSight();
+    
+    /**
+     * Returns true if the Ground Station is currently visible from the satellite.
+     */
+    /*@ pure @*/
+    boolean isGroundStationInSight() ;
 
     /**
      * Returns the current simplified Sun alignment level.
