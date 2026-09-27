@@ -154,6 +154,8 @@ Forcing the Sun error to `0.0` during eclipses prevents unrealistic, continuous 
 
 ---
 
+
+
 ## 3.4 Discrete Two-State Power Consumption
 
 ### Choice
@@ -261,3 +263,179 @@ The Thermal Control System operates across three discrete power consumption leve
 ### Motivation
 
 Electric resistance heaters consume significant power when energized. Modeling power as discrete states allows the simulation to accurately reflect energy draw on the battery (`IBattery`) through the central `PowerSystemController` during orbital night operations.
+
+
+---
+
+# 5. Communication System (TT&C)
+
+## 5.1 Environmental Visibility & Contact Window Abstraction
+
+### Choice
+
+Ground-to-satellite communication is modeled using a boolean visibility flag (`isGroundStationInSight()`) provided by the environment, rather than computing orbital line-of-sight geometry or signal attenuation (Friis transmission equation).
+
+### Motivation
+
+Calculating real-time RF propagation loss, Doppler shift, and antenna beam patterns requires heavy orbital geometry and physics simulation. 
+
+For an On-Board Computer (OBC) architectural model, the critical functional requirement is verifying that telemetry transmission and command ingestion are strictly gated by ground station availability. Abstracting radio contact to an environmental visibility check provides an exact interface for mission logic without unnecessary computational overhead.
+
+### Consequences
+
+* Uplink (`receiveCommand`) and Downlink (`sendData`) operations are rejected automatically when `env.isGroundStationInSight()` returns `false`.
+* The OBC can only execute ground-driven state changes or offload buffer data during valid visibility windows.
+
+---
+
+## 5.2 Command Ingestion & Telemetry Buffer Management
+
+### Choice
+
+Command uplink and data downlink are implemented using high-level string abstractions (`receiveCommand(String)` and `sendData(String)`) backed by a single-element command buffer (`lastReceivedCommand`).
+
+### Motivation
+
+In flight software, telecommand (TC) and telemetry (TM) frames follow complex packetization standards (e.g., CCSDS). At this stage of system simulation, string-based messaging captures the exact semantic interface required for command routing while avoiding low-level binary bit-parsing complexity.
+
+### Consequences
+
+* `receiveCommand` stores the latest telecommand string received during a pass window.
+* `getLastReceivedCommand` allows the Central OBC Controller to poll and execute pending commands.
+* Command buffers are safely guarded by `isCommunicationAvailable()` preconditions to prevent ghost execution when out of ground range.
+
+---
+
+## 5.3 Discrete RF Power Consumption Profile
+
+### Choice
+
+The Communication System's power consumption transitions between three discrete operational tiers:
+* **Inactive State (`setActive(false)`):** $0.0\text{ W}$ (radio subsystem unpowered).
+* **Standby Mode:** $1.0\text{ W}$ (receiver listening continuously for incoming uplink signals).
+* **Transmission Mode (`transmitting = true`):** $20.0\text{ W}$ (RF power amplifier energized for telemetry downlink).
+
+### Motivation
+
+Radio transmitters consume significantly more electrical energy when driving power amplifiers during RF modulation compared to idle listening. Modeling distinct standby and transmit power levels allows the Electric Power System (EPS) to dynamically track energy drain during active ground station passes.
+
+### Consequences
+
+* Each simulation tick in `processCommunication` automatically resets `transmitting` to `false`.
+* Calling `sendData()` during a valid contact window sets `transmitting = true`, instantly increasing system draw to 20.0for the current tick.
+
+
+
+# 6. On-Board Computer (OBC) & Flight Software
+
+## 6.1 Deterministic Sequential Execution Sequence
+
+### Choice
+
+The On-Board Computer (`OBC`) executes its flight loop via a strictly deterministic, 6-phase sequential pipeline per simulation tick:
+
+Time Management------> FDIR ------> Mode Management ------> Command & Control ------> Telemetry & Data ------> Physical Subsystems
+
+### Motivation
+
+In full-scale satellite flight software, execution order is paramount to system safety and causality. Executing tasks out of sequence could lead to race conditions or dangerous operational states—such as executing a high-power ground command right after a critical battery drop, but *before* the FDIR has a chance to trigger safety isolation.
+
+Ordering the flight loop sequentially ensures absolute determinism, making the simulation reproducible, testable, and compliant with formal JML specifications.
+
+### Consequences
+
+* **Phase 1 — Time Management (`onBoardTime++`):** Time is incremented as the very first instruction so that all logs, telemetry packets, and FDIR decisions generated within the tick carry the exact current time tag.
+* **Phase 2 — FDIR (`runFDIR`):** Safety monitoring evaluates critical system boundaries (*Watch Points*) before any external commands are processed.
+* **Phase 3 — Mode Management (`updateFlightModes`):** State transitions are applied immediately to align hardware operational profiles with the latest safety decisions.
+* **Phase 4 — Command & Control (`processTelecommands`):** Ground telecommands are ingested and filtered against active mode constraints (e.g., rejecting payload activation if in `SAFE` mode).
+* **Phase 5 — Telemetry & Data Handling (`handleTelemetryAndData`):** Housekeeping packets and science data transfers are packaged using the finalized state of the current tick.
+* **Phase 6 — Physical Subsystem Step Execution:** Physical routines (`aocs.processAOCS`, `thermal.processThermal`, etc.) run at the very end of the tick so that hardware energy draw and physics reflect the exact software decisions established during the same cycle.
+
+---
+
+## 6.2 Hysteresis State Machine for Power Recovery
+
+### Choice
+
+Transitions between operational modes—specifically entering and exiting `CHARGE` mode—are governed by an **hysteresis loop** (50.0 entry threshold vs. 80.0 exit threshold).
+
+### Motivation
+
+Using a single battery threshold (e.g., 50.0) for both triggering and clearing power recovery would cause high-frequency mode chatter (rapid toggling between `NOMINAL` and `CHARGE` on consecutive ticks near 50.0%). In real spacecraft engineering, chatter causes relay fatigue, electrical instability, and corrupted payload acquisitions.
+
+Introducing a wide hysteresis band stabilizes mode management and ensures that the power storage system recovers a substantial energy margin before high-power instruments are re-energized.
+
+### Consequences
+
+* **Entry (`BATTERY_LOW = 50.0%`):** If battery charge drops below 50.0% while exposed to sunlight, FDIR shifts `currentMode` to `CHARGE`, shutting down high-power payload instruments.
+* **Latching:** The satellite remains locked in `CHARGE` mode as battery level recovers through 50.0%, 60.0%, and 70.0%.
+* **Exit (`BATTERY_RECHARGED = 80.0%`):** Mode Management transitions back to `NOMINAL` strictly when battery charge reaches or exceeds 80.0%.
+
+---
+
+## 6.3 Immutable Housekeeping Telemetry Snapshots
+
+### Choice
+
+Telemetry parameter collection within the OBC uses an immutable record data structure (`HousekeepingData`).
+
+### Motivation
+
+During a flight loop execution cycle, multiple software routines (FDIR, telemetry formatters, mode managers) require access to health metrics. If underlying subsystem states were modified concurrently or mid-tick by side effects, different tasks within the same tick would evaluate inconsistent data.
+
+Capturing an immutable snapshot at the beginning of the FDIR phase guarantees data consistency across all software evaluations within that simulation tick.
+
+### Consequences
+
+* `collectHousekeeping(env)` returns a frozen, read-only snapshot of all subsystem states (SoC, temperature, memory, AOCS alignment error).
+* Subsystem mutations occurring later in the tick do not alter the active snapshot being evaluated by the FDIR or telemetry encoder.
+
+---
+
+## 6.4 Bounded Science Data Downlink Capacity
+
+### Choice
+
+Payload science memory offloading is constrained by a fixed maximum downlink transfer rate per tick (`MAX_DOWNLINK_RATE_PER_TICK = 10.0 MB`).
+
+### Motivation
+
+In physical space missions, onboard mass memory cannot be emptied instantaneously upon establishing contact with a ground station due to finite RF bandwidth and channel throughput. 
+
+Modeling a bounded downlink rate forces the simulation to accurately reflect progressive data offloading across finite ground station pass windows.
+
+### Consequences
+
+* Mass memory (`payload.getStoredDataSize()`) is cleared progressively via `payload.clearData(dataToTransfer)` over multiple ticks during a pass.
+* Telemetry packets accurately track remaining onboard storage (`REMAINING`) during active downlink passes.
+
+---
+
+## 6.5 Subsystem Aggregation via the AOCS Facade
+
+### Choice
+
+The OBC interacts with the Attitude and Orbit Control System exclusively through a unified facade interface (`IAOCS`).
+
+### Motivation
+
+Decoupling the central flight computer from individual sensors and actuators (`SunSensor`, `EarthSensor`, `AttitudeControl`, `OrbitControl`, `PropulsionSystem`) enforces clean architectural boundaries. The OBC requires high-level operational health indicators and control handles rather than direct manipulation of sensor electronics.
+
+### Consequences
+
+* The OBC queries high-level pointing metrics directly (`aocs.getAttitudeAlignmentError()`, `aocs.isAttitudeStable()`) for FDIR gating and command validation.
+* The flight loop invokes a single physical update method (`aocs.processAOCS(env)`), leaving sub-component coordination to the `AOCS` facade.
+
+---
+
+## 6.6 Explicit OBC Computer Base Power Draw
+
+### Choice
+
+The central flight computer processor is assigned an explicit, constant base power consumption (`OBC_POWER_DRAW = 3.0 W`).
+
+### Motivation
+
+The On-Board Computer hardware (CPU, system RAM, supervisor circuits) continuously draws electrical power regardless of whether payload instruments or transmitters are active. 
+
+Including `OBC_POWER_DRAW` in the global energy balance ensures realistic baseline battery depletion during idle or `SAFE` mode operations.
