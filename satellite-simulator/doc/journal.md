@@ -174,19 +174,19 @@ Through this abstraction, I attempted to simulate the core logic of an attitude 
 
 * **Designed the Thermal Control Module (`IThermalControl`):** Created the thermal management subsystem interface and concrete implementation in a dedicated `satellite.model.thermal` package to safeguard hardware integrity against extreme space thermal environments.
 
-* **Implemented Passive Thermal Exchange Dynamics:** Modeled natural environmental thermal transfers based on orbital illumination—simulating direct solar heating ($+0.8^\circ\text{C}/\text{tick}$) when exposed to sunlight and passive radiative cooling ($-1.0^\circ\text{C}/\text{tick}$) when shadowed in eclipse.
+* **Implemented Passive Thermal Exchange Dynamics:** Modeled natural environmental thermal transfers based on orbital illumination—simulating direct solar heating (0.8) when exposed to sunlight and passive radiative cooling (-1.0) when shadowed in eclipse.
 
 * **Built a Hysteresis Loop Thermostat:** Implemented active heating logic with hysteresis bounds to prevent rapid state oscillation (chattering). Electric heaters engage automatically when temperature drops below `MIN_SAFE_TEMP = 5.0°C` and stay latched active until restoring the core to `TARGET_TEMP = 20.0°C`.
 
-* **Dynamic Load & Initial Condition Flexibilities:** Configured dual-state power consumption (a baseline $1.0\text{ W}$ standby load for continuous sensor monitoring vs. a $25.0\text{ W}$ surge during active resistance heating) and exposed constructor parameters for flexible starting temperatures to test both nominal operations and cold-start recovery scenarios.
+* **Dynamic Load & Initial Condition Flexibilities:** Configured dual-state power consumption (a baseline 1.0 standby load for continuous sensor monitoring vs. a 25.0 surge during active resistance heating) and exposed constructor parameters for flexible starting temperatures to test both nominal operations and cold-start recovery scenarios.
 
 ### Challenges & Insights (What I Realized):
 
 * **Preventing Thermostatic Chattering via Hysteresis:** A naive single-threshold thermostat (e.g., toggling heater on below 20.0°C and off above 20.0°C) would cause rapid, unphysical switching every single tick, straining system state logic and generating noisy power draws. Introducing a distinct trigger bound (`MIN_SAFE_TEMP = 5.0°C`) and target restoration bound (`TARGET_TEMP = 20.0°C`) stabilizes the control loop.
 
-* **Asymmetric Thermal Radiative Balance:** In orbit, heat dissipation into the cosmic void during eclipse occurs faster than passive solar radiation absorption. Reflecting this asymmetry ($+0.8^\circ\text{C}$ heating vs. $-1.0^\circ\text{C}$ cooling) correctly forces the satellite to rely on active battery-powered heating during long eclipse passes.
+* **Asymmetric Thermal Radiative Balance:** In orbit, heat dissipation into the cosmic void during eclipse occurs faster than passive solar radiation absorption. Reflecting this asymmetry ($+0.8^\circ\text{C}$ heating vs. -1.0 cooling) correctly forces the satellite to rely on active battery-powered heating during long eclipse passes.
 
-* **Tight Inter-Subsystem Energy Dependencies:** Thermal control represents one of the largest passive energy drains during eclipse phases. Integrating its dynamic $25.0\text{ W}$ heater load highlights the interdependence between the Thermal subsystem, `IEnvironment` eclipse flags, and the `Battery` storage ceiling.
+* **Tight Inter-Subsystem Energy Dependencies:** Thermal control represents one of the largest passive energy drains during eclipse phases. Integrating its dynamic 25.0heater load highlights the interdependence between the Thermal subsystem, `IEnvironment` eclipse flags, and the `Battery` storage ceiling.
 
 ### Next Steps:
 
@@ -204,16 +204,54 @@ Through this abstraction, I attempted to simulate the core logic of an attitude 
 
 * **Environment-Gated Communication Channel:** Integrated dynamic line-of-sight checks within `processCommunication(IEnvironment env)` using `env.isGroundStationInSight()`. Data transmission and uplink reception are automatically blocked whenever orbital geometry cuts ground visibility.
 
-* **Dynamic RF Power Consumption Profile:** Modeled a three-tiered power consumption scheme tied to component status—$0.0\text{ W}$ when powered off (`active == false`), a baseline $1.0\text{ W}$ standby load to continuously listen for uplink orders, and a $20.0\text{ W}$ RF power amplifier draw during active telemetry transmission (`sendData()`).
+* **Dynamic RF Power Consumption Profile:** Modeled a three-tiered power consumption scheme tied to component status—$0.0\text{ W}$ when powered off (`active == false`), a baseline 1.0 standby load to continuously listen for uplink orders, and a 20.0 RF power amplifier draw during active telemetry transmission (`sendData()`).
 
 ### Challenges & Insights (What I Realized):
 
 * **Visibility-Constrained Communication Windows:** In Low Earth Orbit (LEO), ground station passes are brief and intermittent. Tying telemetry operations directly to `env.isGroundStationInSight()` ensures the satellite software cannot unrealistically dump data or receive ground commands into deep space voids.
 
-* **Transient State Lifecycle per Tick:** Radio transmission is an instantaneous dynamic event per simulation cycle. Auto-resetting the `transmitting` flag to `false` at the start of each tick ensures the $20.0\text{ W}$ RF amplifier surge is billed only during cycles where `sendData()` is explicitly executed.
+* **Transient State Lifecycle per Tick:** Radio transmission is an instantaneous dynamic event per simulation cycle. Auto-resetting the `transmitting` flag to `false` at the start of each tick ensures the 20.0 RF amplifier surge is billed only during cycles where `sendData()` is explicitly executed.
 
 * **Command Buffer Management:** Decoupling uplink command reception from execution via a string-based buffer allows the communication module to act as a pure receiver, leaving command decoding and routing to the upper-level satellite brain (`OBC`).
 
-Next Steps:
+### Next Steps:
 
 * Develop the final physical equipment module: **The Payload Subsystem** 
+
+## 📝 Entry 9: Payload Subsystem Implementation & Mission Data Acquisition
+
+
+### What I Did:
+
+* **Designed the Payload Subsystem Architecture:** Created the dedicated `satellite.model.payload` package alongside the `IPayloadSystem` interface and `PayloadSystem` implementation to model the primary mission instrument (e.g., an Earth observation camera).
+* **Targeted Earth Data Acquisition:** Implemented `processPayload(IEnvironment env)` to validate that the instrument is active AND Earth is in sight (`env.isEarthInSight()`). Each valid cycle generates and stores **10.0 MB** of mission data in onboard memory.
+* **Defined Mission Power Consumption Profiles:** Modeled three operational power tiers—$0.0\text{ W}$ when powered down (`active == false`), a baseline 2.0 standby load for control electronics, and a $40.0\text{ W}$ operational surge during active optical/electronic sensing (`operating == true`).
+
+### Challenges & Insights (What I Realized):
+
+* **Payload Operational Gating:** An Earth observation instrument cannot produce valid science data into deep space voids. Gating telemetry generation behind `env.isEarthInSight()` prevents the simulation from generating unrealistically high-value data during improper target pointing or eclipse/blind-spot orientations.
+* **Peak Power Constraints During Science Phases:** At 40.0, active payload operations represent one of the heaviest power drains on the satellite. This creates a realistic operational tradeoff: imaging runs must be tightly scheduled against solar production (`ISolarPanel`) and battery depth of discharge (`Battery`).
+* **Memory Management via Explicit Purging:** Decoupling data generation (`processPayload`) from data clearing (`clearData`) ensures mission memory accumulates continuously until the communication subsystem (`ICommunicationSystem`) successfully dumps the payload buffer back to the ground station.
+
+### Next Steps: **Next Steps:**
+Now that all physical hardware subsystems are fully defined and implemented, the next phase will focus on designing and implementing the **On-Board Computer (OBC)** to serve as the central flight software brain, orchestrating system states and automated FDIR recovery loops.
+
+##📝 Entry 10: On-Board Computer (OBC) Specification, Flight Loop & FDIR
+
+### What I Did:
+
+* **Architected the Central On-Board Computer (`IOBC` & `OBC`):** Designed the core flight software decision unit in `satellite.model.obc` to coordinate all five satellite platform subsystems (`IBattery`, `IAOCS`, `IThermalControl`, `ICommunicationSystem`, `IPayloadSystem`).
+* **Implemented a Deterministic Synchronous Flight Loop (`processFlightLoop`):** Built a 5-task time-driven tick loop executing in strict sequence: Time Management (`onBoardTime++`), Housekeeping & FDIR (`runFDIR`), Mode Management (`updateFlightModes`), Telecommands (`processTelecommands`), and Telemetry/Data Handling (`handleTelemetryAndData`), followed by the hardware physics tick execution.
+* **Implemented FDIR (Fault Detection, Isolation, and Recovery) & Watch Points:** Integrated automatic safety checks monitoring critical operational boundaries: battery depth of discharge (`BATTERY_CRITICAL = 20.0%`), thermal extremes (`TEMP_MIN = 0.0°C`, `TEMP_MAX = 60.0°C`), AOCS tumbling error (`MAX_ALLOWED_ALIGNMENT_ERROR = 15.0°`), and memory saturation (`MAX_PAYLOAD_MEMORY_MB = 500.0 MB`).
+* **Built State Machine Hysteresis & Downlink Rate Limiting:** Formulated `FlightMode` transitions (`BOOT`, `NOMINAL`, `CHARGE`, `SAFE`) with clear hysteresis bounds (e.g., entering `CHARGE` below 50% SoC and locking until restoring to 80% SoC). Restricted science memory offloading to radio link constraints (`MAX_DOWNLINK_RATE_PER_TICK = 10.0 MB`).
+
+### Challenges & Insights (What I Realized):
+
+* **Deterministic Tick Sequence vs. Multithreading:** Avoiding asynchronous multithreading in favor of a single-threaded deterministic sequence guarantees zero race conditions or non-reproducible states. Executing software decisions *before* triggering physical subsystem processing ensures hardware calculations accurately reflect current OBC choices within the same tick.
+* **Snapshot Immutability via Java Records (`HousekeepingData`):** Capturing sensor metrics inside an immutable record at the beginning of each tick prevents mid-cycle state mutation from corrupting FDIR evaluation logic.
+* **Hysteresis Loop Protection in Flight Modes:** Unprotected mode transitions cause destructive "chattering" (e.g., rapidly toggling between `NOMINAL` and `CHARGE` at 49.9% SoC). Enforcing an 80% SoC recovery ceiling provides stable state locking.
+* **FDIR Precedence Over Telecommand Ingestion:** Evaluating FDIR prior to telecommand processing ensures emergency modes (`SAFE`) instantly discard risky ground commands (like `START_PAYLOAD`) before they can execute.
+
+### Next Steps:
+
+ Proceed to the final system aggregation step: Implementing the master `ISatellite` interface wrapper to tie the OBC, hardware subsystems, and environment together.
