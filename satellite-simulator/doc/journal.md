@@ -22,10 +22,6 @@ Instead of forcing a top-down design, I am pivoting to a **bottom-up approach**.
 ---
 
 ## 📝 Entry 2: Designing the Battery Subsystem & Overcoming Numerical Drift
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
 
 ### What I Did:
 1. Initiated the bottom-up approach by designing the `IBattery` interface and its concrete implementation `Battery`.
@@ -60,9 +56,6 @@ Now that the battery is solid, fully specified, and safely protected against num
 ## 📝 Entry 3: Solar Array Design & Functional Domain Modeling
 <<<<<<< Updated upstream
 
-=======
->>>>>>> Stashed changes
-
 ### What I Did:
 1. Designed and implemented the `ISolarPanel` interface along with its concrete `SolarPanel` class.
 2. Formulated strict JML behavioral contracts to mirror the physical mechanics of stowed versus deployed states.
@@ -88,8 +81,6 @@ With the individual power generation (`SolarPanel`) and power storage (`Battery`
 ## 📝 Entry 4: Power System Controller & Architectural Refinements
 <<<<<<< Updated upstream
 
-=======
->>>>>>> Stashed changes
 
 ### What I Did:
 1. Designed and implemented the `IPowerSystemController` interface and its concrete `PowerSystemController` class to bridge solar production and battery storage.
@@ -255,3 +246,33 @@ Now that all physical hardware subsystems are fully defined and implemented, the
 ### Next Steps:
 
  Proceed to the final system aggregation step: Implementing the master `ISatellite` interface wrapper to tie the OBC, hardware subsystems, and environment together.
+ 
+ 
+## 📝 Entry 11: Unit Testing Pivot with JUnit 5 & Contract Verification Strategy
+
+### What I Did:
+1. **Architectural Pause & Testing Strategy:** Paused the top-level orchestration (the `Satellite` master class and `MainRunner` execution entry point) to establish a comprehensive unit testing suite using **JUnit 5**.
+2. **Bottom-Up Validation Strategy:** Applied a strict bottom-up testing methodology. Before wiring up full system dynamics inside `Satellite.java` or running multi-component loops in `MainRunner.java`, every individual hardware and software module (starting with `Battery`) must be independently validated in isolation.
+3. **Dedicated Test Workspace Setup:** Configured a dedicated `test/` source folder parallel to `src/`, replicating the domain package hierarchy (`satellite.model.power`, etc.) to cleanly separate operational flight code from verification code.
+
+### Technical Learnings & Key Insights (What I Learned):
+
+* **Bridging TDA Theory and Industry Practice:**
+  * I bridged academic Design by Contract (DbC) / Abstract Data Type (ADT) concepts with real-world Java engineering. 
+  * I aligned formal JML behavioral specifications (`@requires`, `@ensures`, `@invariant`, `/*@ pure @*/`) with JUnit 5 assertions (`assertEquals`, `assertTrue`, `assertThrows`).
+
+* **Nominal Testing vs. Postconditions (`@post`):**
+  * I learned that nominal unit tests (verifying that a method produces expected output when given valid inputs) are external verifications of a method's **postconditions**.
+  * While internal postcondition assertions (`assert` statements in method epilogues) can be toggled off in production to save computational overhead, JUnit nominal tests continuously validate that the provider holds its architectural promises.
+
+* **Precondition Testing & Defensive Failures (`@pre`):**
+  * Verifying preconditions ensures the subsystem properly guards against invalid client interactions.
+  * Using `assertThrows(AssertionError.class, ...)` allows me to test that defensive checks (`if (...) throw new AssertionError(...)`) trigger immediately upon contract violation, ensuring bad client calls are rejected at runtime.
+
+* **Floating-Point Precision & Epsilon (Delta):**
+  * Re-evaluated IEEE 754 floating-point drift in unit testing. When asserting `double` state metrics (such as battery charge levels in Watts), direct binary equality (`==`) creates fragile tests due to micro-imprecisions. 
+  * Applying a delta tolerance margin (e.g., `assertEquals(expected, actual, 0.001)`) guarantees mathematical correctness while preventing false test failures.
+
+### Next Steps:
+* Execute and validate the `BatteryTest` test suite to achieve 100% green-bar coverage on the power storage layer.
+
