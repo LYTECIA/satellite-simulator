@@ -3,7 +3,7 @@ package satellite.model.power;
 /**
  * Concrete implementation of the Power System Controller respecting CQS.
  */
-public class PowerSystemController implements IPowerSystemController {
+ class PowerSystemController implements IPowerSystemController {
 
     // --- ATTRIBUTES ---
     private final IBattery battery;

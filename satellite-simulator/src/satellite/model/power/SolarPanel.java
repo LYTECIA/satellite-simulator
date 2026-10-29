@@ -4,7 +4,7 @@ package satellite.model.power;
  * Concrete implementation of the satellite's solar panel subsystem.
  * Handles deployment mechanics and energy production tracking.
  */
-public class SolarPanel implements ISolarPanel {
+ class SolarPanel implements ISolarPanel {
 
     // --- ATTRIBUTES ---
     private boolean deployed;

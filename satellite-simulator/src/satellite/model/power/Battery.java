@@ -4,7 +4,7 @@ package satellite.model.power;
  * Concrete implementation of the satellite battery.
  * Includes defensive checks and mathematical clamping to prevent floating-point drift.
  */
-public class Battery implements IBattery {
+ class Battery implements IBattery {
     
     // --- ATTRIBUTES ---
     private double chargeLevel;
