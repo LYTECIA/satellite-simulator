@@ -6,6 +6,13 @@ package satellite.model.power;
  * @invariant getChargeLevel() >= MIN_CHARGE_LEVEL && getChargeLevel() <= MAX_CHARGE_LEVEL;
  * @invariant isFull() <==> (getChargeLevel() >= MAX_CHARGE_LEVEL);
  * @invariant isEmpty() <==> (getChargeLevel() <= MIN_CHARGE_LEVEL);
+ * 
+ * @cons <pre>
+ * $DESC$ Creates a battery initialized at full capacity.
+ * $ARGS$ None
+ * $PRE$ None
+ * $POST$ getChargeLevel() == MAX_CHARGE_LEVEL
+ * </pre>
  */
 public interface IBattery {
     
@@ -16,7 +23,7 @@ public interface IBattery {
     // --- QUERIES ---
 
     /**
-     * Returns the current battery charge level as a percentage.
+     * Returns the current battery charge level.
      * @ensures \result >= MIN_CHARGE_LEVEL && \result <= MAX_CHARGE_LEVEL;
      */
     /*@ pure @*/ double getChargeLevel();

@@ -62,7 +62,10 @@ public class PowerSystemController implements IPowerSystemController {
             double emptySpace = IBattery.MAX_CHARGE_LEVEL - this.battery.getChargeLevel();
             double energyToStore = Math.min(surplus, emptySpace);
             
+         // Only charge if the energy to store is strictly positive to respect IBattery precondition
+            if (energyToStore > 0.0) {
             this.battery.charge(energyToStore);
+            }
             
             this.currentNetFlow = energyToStore; 
             this.grantedEnergy = totalConsumption; 

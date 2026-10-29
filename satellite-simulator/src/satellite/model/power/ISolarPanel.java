@@ -6,6 +6,13 @@ package satellite.model.power;
  * @invariant getEnergyProduction() >= MIN_ENERGY;
  * @invariant !isDeployed() ==> getEnergyProduction() == MIN_ENERGY;
  * @invariant isFunctional() <==> (isDeployed() && getEnergyProduction() > MIN_ENERGY);
+ * 
+ * @cons <pre>
+ * $DESC$ Creates a solar panel initialized in its stowed (launch) configuration.
+ * $ARGS$ None
+ * $PRE$ None
+ * $POST$ !isDeployed() && getEnergyProduction() == MIN_ENERGY && !isFunctional()
+ * </pre>
  */
 public interface ISolarPanel {
     

@@ -2,13 +2,17 @@ package satellite.model.power;
 
 /**
  * Interface representing the central Power System Controller.
+ * 
+ * @invariant getBattery() != null && getSolarPanel() != null
+ * @invariant getGrantedEnergy() >= 0.0
+ * @invariant getGrantedEnergy() <= IBattery.MAX_CHARGE_LEVEL + getSolarPanel().getEnergyProduction()
+ * 
+ * @cons
+ * $DESC$ Creates a Power System Controller monitoring a battery and a solar panel.
+ * $ARGS$ IBattery battery, ISolarPanel solarPanel
+ * $PRE$ battery != null && solarPanel != null
+ * $POST$ getBattery() == battery && getSolarPanel() == solarPanel && getNetFlow() == 0.0 && getGrantedEnergy() == 0.0
  */
-/*@ public invariant 
-@   getBattery() != null && 
-@   getSolarPanel() != null &&
-@   getGrantedEnergy() >= 0.0 &&
-@   getGrantedEnergy() <= IBattery.MAX_CHARGE_LEVEL + getSolarPanel().getEnergyProduction();
-@*/
 public interface IPowerSystemController {
 
     // --- QUERIES ---
