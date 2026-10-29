@@ -51,10 +51,8 @@ Instead of forcing a top-down design, I am pivoting to a **bottom-up approach**.
 Now that the battery is solid, fully specified, and safely protected against numerical drift, I am ready to design the next critical component of the Power System: the **Solar Panels (`ISolarPanel`)**, incorporating their deployment mechanics and energy production logic.
 
 
----
 
 ## 📝 Entry 3: Solar Array Design & Functional Domain Modeling
-<<<<<<< Updated upstream
 
 ### What I Did:
 1. Designed and implemented the `ISolarPanel` interface along with its concrete `SolarPanel` class.
@@ -79,8 +77,6 @@ With the individual power generation (`SolarPanel`) and power storage (`Battery`
 ---
 
 ## 📝 Entry 4: Power System Controller & Architectural Refinements
-<<<<<<< Updated upstream
-
 
 ### What I Did:
 1. Designed and implemented the `IPowerSystemController` interface and its concrete `PowerSystemController` class to bridge solar production and battery storage.
@@ -276,3 +272,29 @@ Now that all physical hardware subsystems are fully defined and implemented, the
 ### Next Steps:
 * Execute and validate the `BatteryTest` test suite to achieve 100% green-bar coverage on the power storage layer.
 
+## 📝 Entry 12: Completing Power System Unit Tests, Bug Resolution, and Enforcing Encapsulation via Factory Pattern
+
+### What I Did:
+1. **Full Subsystem Unit Testing:** Developed comprehensive JUnit 5 test suites for all three Power System components (`BatteryTest`, `SolarPanelTest`, and `PowerSystemControllerTest`).
+2. **Bug Detection & Fix in `PowerSystemController`:**
+   * **Failure Identified:** The `testSurplusEnergyBatteryAlreadyFull` unit test failed with an `AssertionError` originating from `Battery.charge(amount)`.
+   * **Root Cause Analysis:** When the battery was already full (`chargeLevel == MAX_CHARGE_LEVEL`), the calculated energy to store yielded `0.0`. `PowerSystemController` invoked `battery.charge(0.0)`, which directly violated the `IBattery` precondition (`@requires amount > 0`).
+   * **Resolution:** Added a protective guard (`if (energyToStore > 0.0)`) prior to calling `charge()`. Re-executed the test suite, achieving 100% green-bar coverage across all 7 test cases.
+3. **Architectural Refactoring (Factory Pattern Integration):**
+   * Implemented a dedicated **`PowerFactory`** class providing static creation methods (`createBattery()`, `createSolarPanel()`, `createPowerSystemController()`).
+   * Reduced class visibility for concrete implementations (`Battery`, `SolarPanel`, and `PowerSystemController`) from `public` to **package-private** (default visibility).
+
+### Key Insights & Architectural Rationale:
+
+* **Bridging OOP Theory and Design Patterns:**
+  * While Object-Oriented Programming (OOP) provides foundational mechanisms like encapsulation and polymorphism, direct instantiation via the `new` keyword (`IBattery b = new Battery()`) forces tight coupling between clients and concrete implementation classes.
+  * The **Factory Pattern** acts as the design solution that enables true encapsulation. By centralizing all `new` statements inside `PowerFactory`, client components (`Satellite`, `OBC`, `MainRunner`) interact exclusively with public interfaces (`IBattery`, `ISolarPanel`, `IPowerSystemController`).
+
+* **Benefits for Satellite Simulation Dynamics:**
+  1. **Hiding Subsystem Complexity:** Top-level orchestration classes do not need to manage instantiation mechanics or internal dependencies for each physical component.
+  2. **Model Interchangeability (Polymorphism):** Allows seamless substitution of simulation models (e.g., swapping a simple linear `Battery` with a thermal-influenced `AdvancedBattery`) by modifying a single line in `PowerFactory`, leaving the rest of the simulator untouched.
+  3. **Preventing Rogue Instantiations:** Restricting concrete class visibility to package-private prevents developers from instantiating uncoordinated components outside the factory.
+  4. **Alignment with Course Pedagogy:** Aligns the project directly with academic standards seen in course lab assignments, incorporating `@cons` Javadoc constructor specifications.
+
+### Next Steps:
+* Apply this same workflow (Interface `@cons` Javadoc -> Package-private Concrete Classes -> Public Factory -> JUnit 5 Tests) to the next subsystem: **AOCS (Attitude and Orbit Control System)**, including `AOCSFactory` and its corresponding unit tests.

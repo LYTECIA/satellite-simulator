@@ -64,7 +64,6 @@ Subsystem consumption is also expressed in Watts.
 
 No unit conversion is performed inside the simulator.
 
----
 
 ## 2.2 Simplified Energy Surplus Management
 
@@ -88,7 +87,6 @@ The remaining surplus is simply removed from the simulation and has no further e
 
 It is not converted into heat and does not interact with the Thermal System.
 
----
 
 ## Future Decisions
 
