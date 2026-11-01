@@ -1,26 +1,19 @@
 package satellite.model.environment;
 
-public class Environment implements IEnvironment {
+class Environment implements IEnvironment {
 
     private boolean inSunlight;
     private boolean earthInSight;
     private boolean groundStationInSight;
-
-    /*
-     * Simplified current alignment values.
-     *
-     * 0.0 = no alignment
-     * 1.0 = perfect alignment
-     */
     private double sunAlignment;
     private double earthAlignment;
-
-    /*
-     * Simplified environmental disturbance.
-     */
     private double naturalDrift;
 
-
+    // --- SIMULATION TICK COUNTER & CONSTANTS ---
+    private int tickCounter;
+    private static final int ECLIPSE_PERIOD_TICKS = 50; // Switches sunlight state every 50 ticks
+    
+    
     public Environment(
             boolean inSunlight,
             boolean earthInSight,
@@ -28,6 +21,17 @@ public class Environment implements IEnvironment {
             double sunAlignment,
             double earthAlignment,
             double naturalDrift) {
+    	
+    	
+    	if (sunAlignment < 0.0 || sunAlignment > 1.0) {
+            throw new AssertionError("Precondition violated: sunAlignment must be between 0.0 and 1.0.");
+        }
+        if (earthAlignment < 0.0 || earthAlignment > 1.0) {
+            throw new AssertionError("Precondition violated: earthAlignment must be between 0.0 and 1.0.");
+        }
+        if (naturalDrift < 0.0) {
+            throw new AssertionError("Precondition violated: naturalDrift cannot be negative.");
+        }
 
         this.inSunlight = inSunlight;
         this.earthInSight = earthInSight;
@@ -75,10 +79,22 @@ public class Environment implements IEnvironment {
 
     @Override
     public void updateState() {
-        /*
-         * The environment will be updated here at each simulation tick.
-         *
-         * For now, no physical model is implemented.
-         */
+        this.tickCounter++;
+
+        // 1. Simulate Day/Night orbit cycle (e.g., toggles sunlight state every 50 ticks)
+        if (this.tickCounter % ECLIPSE_PERIOD_TICKS == 0) {
+            this.inSunlight = !this.inSunlight;
+        }
+
+        // 2. Apply natural environmental drift to alignments (degradation over time)
+        if (this.inSunlight) {
+            this.sunAlignment = Math.max(0.0, this.sunAlignment - this.naturalDrift);
+        } else {
+            this.sunAlignment = 0.0; // Locked to 0.0 during eclipse
+        }
+
+        if (this.earthInSight) {
+            this.earthAlignment = Math.max(0.0, this.earthAlignment - (this.naturalDrift * 0.5));
+        }
     }
 }

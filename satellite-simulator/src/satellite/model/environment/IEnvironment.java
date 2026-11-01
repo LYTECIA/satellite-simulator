@@ -1,5 +1,20 @@
 package satellite.model.environment;
 
+/**
+ * Interface representing the space environment conditions relative to the satellite.
+ * 
+ * @invariant getSunAlignment() >= 0.0 && getSunAlignment() <= 1.0
+ * @invariant getEarthAlignment() >= 0.0 && getEarthAlignment() <= 1.0
+ * @invariant getNaturalDrift() >= 0.0
+ * 
+ * @cons
+ * $DESC$ Creates a space environment configuration with specified visibility, alignment levels, and natural drift.
+ * $ARGS$ boolean inSunlight, boolean earthInSight, boolean groundStationInSight, double sunAlignment, double earthAlignment, double naturalDrift
+ * $PRE$ sunAlignment >= 0.0 && sunAlignment <= 1.0 && earthAlignment >= 0.0 && earthAlignment <= 1.0 && naturalDrift >= 0.0
+ * $POST$ isInSunlight() == inSunlight && isEarthInSight() == earthInSight && isGroundStationInSight() == groundStationInSight && getSunAlignment() == sunAlignment && getEarthAlignment() == earthAlignment && getNaturalDrift() == naturalDrift
+ */
+
+
 public interface IEnvironment {
 
     /**
