@@ -2,6 +2,20 @@ package satellite.model.aocs;
 
 import satellite.model.environment.IEnvironment;
 
+/**
+ * Interface representing the software controller for Satellite Orbit Control.
+ * Evaluates orbital drift and executes ground-commanded station-keeping maneuvers.
+ * 
+ * @invariant getOrbitalDrift() >= 0.0
+ * @invariant getPowerConsumption() >= 0.0
+ * 
+ * @cons
+ * $DESC$ Creates an Orbit Control subsystem initialized in active state with no pending maneuvers.
+ * $ARGS$ None
+ * $PRE$ None
+ * $POST$ isActive() && !isManeuverInProgress() && getOrbitalDrift() == 0.0 && getPowerConsumption() == 1.0
+ */
+
 public interface IOrbitControl {
 
     /*@ pure @*/

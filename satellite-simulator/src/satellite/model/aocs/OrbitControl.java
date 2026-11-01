@@ -2,7 +2,7 @@ package satellite.model.aocs;
 
 import satellite.model.environment.IEnvironment;
 
-public class OrbitControl implements IOrbitControl {
+ class OrbitControl implements IOrbitControl {
 
     private boolean active;
     private boolean maneuverRequested;
@@ -11,8 +11,10 @@ public class OrbitControl implements IOrbitControl {
 
     private static final double DRIFT_FACTOR = 0.02;        
     private static final double MANEUVER_FUEL_COST = 0.5;   
-    private static final double CONTROL_POWER = 1.0;        
-    public OrbitControl() {
+    private static final double CONTROL_POWER = 1.0;   
+    
+    
+     OrbitControl() {
         this.active = true;
         this.maneuverRequested = false;
         this.orbitalDrift = 0.0;
@@ -52,13 +54,22 @@ public class OrbitControl implements IOrbitControl {
 
     @Override
     public void requestGroundManeuver() {
-        if (this.active) {
-            this.maneuverRequested = true;
+        if (!this.active) {
+            throw new AssertionError("Precondition violated: cannot request ground maneuver when OrbitControl is inactive.");
         }
+        this.maneuverRequested = true;
     }
 
+    
     @Override
     public void processOrbit(IPropulsionSystem propulsion, IEnvironment env) {
+        if (propulsion == null) {
+            throw new AssertionError("Precondition violated: propulsion cannot be null.");
+        }
+        if (env == null) {
+            throw new AssertionError("Precondition violated: environment cannot be null.");
+        }
+
         if (!this.active) {
             this.powerConsumption = 0.0;
             this.maneuverRequested = false;
@@ -76,7 +87,6 @@ public class OrbitControl implements IOrbitControl {
                     this.orbitalDrift = 0.0;
                 }
             }
-            
             this.maneuverRequested = false;
         } else {
             if (propulsion.isActive()) {

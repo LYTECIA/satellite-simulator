@@ -1,7 +1,17 @@
 package satellite.model.aocs.sensors;
 
 import satellite.model.environment.IEnvironment;
-
+/**
+ * Interface representing a Sun Sensor detecting solar alignment.
+ * 
+ * @invariant  getType() == SensorType.SUN_SENSOR
+ * 
+ * @cons
+ * $DESC$ Creates a Sun sensor initialized in an active state.
+ * $ARGS$ None
+ * $PRE$ None
+ * $POST$ getType() == SensorType.SUN_SENSOR && isActive()
+ */
 public interface ISunSensor extends ISensor {
 
     /**

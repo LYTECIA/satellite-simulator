@@ -2,6 +2,18 @@ package satellite.model.aocs.sensors;
 
 import satellite.model.environment.IEnvironment;
 
+/**
+ * Interface representing an Earth Sensor detecting Earth/horizon alignment.
+ * 
+ * @inv getType() == SensorType.EARTH_SENSOR
+ * 
+ * @cons
+ * $DESC$ Creates an Earth sensor initialized in an active state.
+ * $ARGS$ None
+ * $PRE$ None
+ * $POST$ getType() == SensorType.EARTH_SENSOR && isActive()
+ */
+
 public interface IEarthSensor extends ISensor {
 
     /**

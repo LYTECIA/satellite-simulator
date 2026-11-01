@@ -2,11 +2,11 @@ package satellite.model.aocs.sensors;
 
 import satellite.model.environment.IEnvironment;
 
-public class EarthSensor implements IEarthSensor {
+ class EarthSensor implements IEarthSensor {
 
     private boolean active;
 
-    public EarthSensor() {
+    EarthSensor() {
         this.active = true;
     }
 
@@ -25,8 +25,13 @@ public class EarthSensor implements IEarthSensor {
         this.active = active;
     }
 
+
+    
     @Override
     public double measureEarth(IEnvironment env) {
+        if (env == null) {
+            throw new AssertionError("Precondition violated: environment cannot be null.");
+        }
 
         if (!this.active) {
             return 0.0;
@@ -39,3 +44,4 @@ public class EarthSensor implements IEarthSensor {
         return env.getEarthAlignment();
     }
 }
+

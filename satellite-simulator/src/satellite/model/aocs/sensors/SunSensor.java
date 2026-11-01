@@ -2,11 +2,11 @@ package satellite.model.aocs.sensors;
 
 import satellite.model.environment.IEnvironment;
 
-public class SunSensor implements ISunSensor {
+class SunSensor implements ISunSensor {
 
     private boolean active;
 
-    public SunSensor() {
+    SunSensor() {
         this.active = true;
     }
 
@@ -27,6 +27,10 @@ public class SunSensor implements ISunSensor {
 
     @Override
     public double measureSun(IEnvironment env) {
+        if (env == null) {
+            throw new AssertionError("Precondition violated: environment cannot be null.");
+        }
+
         if (!this.active || !env.isInSunlight()) {
             return 0.0;
         }

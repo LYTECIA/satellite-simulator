@@ -4,7 +4,7 @@ import satellite.model.aocs.sensors.IEarthSensor;
 import satellite.model.aocs.sensors.ISunSensor;
 import satellite.model.environment.IEnvironment;
 
-public class AttitudeControl implements IAttitudeControl {
+    class AttitudeControl implements IAttitudeControl {
 
     private boolean active;
     private double alignmentError;
@@ -20,7 +20,7 @@ public class AttitudeControl implements IAttitudeControl {
     private static final double CORRECTION_POWER = 15.0;
     private static final double MAINTENANCE_POWER = 2.0;
 
-    public AttitudeControl() {
+    AttitudeControl() {
         this.active = true;
         this.alignmentError = 0.0;
         this.powerConsumption = 0.0;
@@ -73,6 +73,18 @@ public class AttitudeControl implements IAttitudeControl {
             ISunSensor sunSensor,
             IEarthSensor earthSensor,
             IEnvironment env) {
+    	
+    	
+    	if (sunSensor == null) {
+            throw new AssertionError("Precondition violated: sunSensor cannot be null.");
+        }
+        if (earthSensor == null) {
+            throw new AssertionError("Precondition violated: earthSensor cannot be null.");
+        }
+        if (env == null) {
+            throw new AssertionError("Precondition violated: environment cannot be null.");
+        }
+        
 
         if (!this.active) {
             this.alignmentError = 0.0;

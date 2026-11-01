@@ -1,6 +1,6 @@
 package satellite.model.aocs;
 
-public class PropulsionSystem implements IPropulsionSystem {
+    class PropulsionSystem implements IPropulsionSystem {
 
     private boolean active;
     private boolean firing;
@@ -10,10 +10,14 @@ public class PropulsionSystem implements IPropulsionSystem {
     private static final double FIRING_POWER = 40.0;  // High power when valves and thrusters are firing
     private static final double STANDBY_POWER = 5.0;  // Low power for tank heaters in standby
 
-    public PropulsionSystem(double initialFuel) {
+    PropulsionSystem(double initialFuel) {
+    	if (initialFuel < 0.0) {
+            throw new AssertionError("Precondition violated: initialFuel cannot be negative.");
+        }
+    	
         this.active = true;
         this.firing = false;
-        this.fuelLevel = Math.max(0.0, initialFuel);
+        this.fuelLevel =initialFuel;
         this.powerConsumption = STANDBY_POWER;
     }
 
@@ -50,10 +54,11 @@ public class PropulsionSystem implements IPropulsionSystem {
 
     @Override
     public void fireThrusters(double fuelAmount) {
-        if (!this.active) {
-            this.firing = false;
-            this.powerConsumption = 0.0;
-            return;
+    	if (!this.active) {
+            throw new AssertionError("Precondition violated: propulsion system must be active to fire thrusters.");
+        }
+        if (fuelAmount <= 0.0) {
+            throw new AssertionError("Precondition violated: fuelAmount must be strictly positive.");
         }
 
         if (this.fuelLevel >= fuelAmount && fuelAmount > 0.0) {
@@ -66,12 +71,11 @@ public class PropulsionSystem implements IPropulsionSystem {
         }
     }
 
+
     @Override
     public void stopFiring() {
         if (!this.active) {
-            this.firing = false;
-            this.powerConsumption = 0.0;
-            return;
+            throw new AssertionError("Precondition violated: propulsion system must be active to stop firing.");
         }
         this.firing = false;
         this.powerConsumption = STANDBY_POWER;

@@ -1,5 +1,20 @@
 package satellite.model.aocs;
 
+/**
+ * Interface representing the physical Propulsion Subsystem of the satellite.
+ * Manages propellant mass (kg), thruster firing pulses, and dynamic power states.
+ * 
+ * @invariant getFuelLevel() >= 0.0
+ * @invariant getPowerConsumption() >= 0.0
+ * @invariant !isActive() ==> (!isFiring() && getPowerConsumption() == 0.0)
+ * 
+ * @cons
+ * $DESC$ Creates a Propulsion system initialized with a specified fuel mass (kg) in standby state.
+ * $ARGS$ double initialFuel
+ * $PRE$ initialFuel >= 0.0
+ * $POST$ isActive() && !isFiring() && getFuelLevel() == initialFuel && getPowerConsumption() == 5.0
+ */
+
 public interface IPropulsionSystem {
 
     /**
